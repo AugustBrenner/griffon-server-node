@@ -1,7 +1,9 @@
 {
   "name": "griffon",
-  "version": "0.0.1",
-  "description": "An event based workflow system",
+  "version": "0.0.2",
+  "homepage": "https://github.com/AugustBrenner/griffon-server-node",
+  "issues": "https://github.com/AugustBrenner/griffon-server-node/issues",
+  "description": "A message queue based workflow system",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
