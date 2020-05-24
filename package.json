@@ -1,0 +1,18 @@
+{
+  "name": "griffon",
+  "version": "0.0.1",
+  "description": "An event based workflow system",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "August Ryan Brenner",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^4.0.1",
+    "express": "^4.17.1",
+    "mongoose": "^5.9.10",
+    "nanoid": "^3.1.3",
+    "socket.io": "^2.3.0"
+  }
+}
