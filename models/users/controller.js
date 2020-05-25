@@ -107,7 +107,12 @@ Public.ensureAdmin = async () => {
 }
 
 
-Public.authenticateSocketConnection = async (socket, next) => {
+Public.authenticateSocketConnection = args => async (socket, next) => {
+
+	if(args.secure === false){
+		console.log(`WARNING: This Griffon server is configured with '{secure: false}'. Clients require no authorization to connect.`)
+		return next()
+	}
 
 	console.log('authenticating')
 
@@ -130,7 +135,7 @@ Public.authenticateSocketConnection = async (socket, next) => {
 		if(!user) return next(new Error('User not found'))
 	}
 
-	else next(new Error('Authentication error'))
+	else return next(new Error('Authentication error'))
 
 
 
@@ -162,7 +167,7 @@ Public.authenticateSocketConnection = async (socket, next) => {
 
 
 
-	next()
+	return next()
 }
 
 

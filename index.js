@@ -129,7 +129,7 @@ Public.serveWorkflow = async args => {
 	
 	const sockets = io(server)
 
-	sockets.use(Users.authenticateSocketConnection)
+	sockets.use(Users.authenticateSocketConnection({secure: args.secure}))
 
 	sockets.use(Operators.attach(sockets))
 
