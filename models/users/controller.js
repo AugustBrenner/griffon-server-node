@@ -107,16 +107,16 @@ Public.ensureAdmin = async () => {
 }
 
 
-Public.authenticateSocketConnection = args => async (socket, next) => {
-
-	if(args.secure === false){
-		console.log(`WARNING: This Griffon server is configured with '{secure: false}'. Clients require no authorization to connect.`)
-		return next()
-	}
+Public.authenticateSocketConnection = async (socket, next) => {
 
 	console.log('authenticating')
 
-	const query = JSON.parse(socket.handshake.query.init)
+	try{
+		var query = JSON.parse(socket.handshake.query.init)
+	}
+	catch(e){
+		return next(new Error('Invalid connection payload'))
+	}
 
 	let user
 
@@ -135,7 +135,7 @@ Public.authenticateSocketConnection = args => async (socket, next) => {
 		if(!user) return next(new Error('User not found'))
 	}
 
-	else return next(new Error('Authentication error'))
+	else next(new Error('Authentication error'))
 
 
 
@@ -165,9 +165,9 @@ Public.authenticateSocketConnection = args => async (socket, next) => {
 	const channels_authorized = validateArray(query.channels, user.allowed_channels, 'channel')
 	if(channels_authorized !== true) return next(channels_authorized)
 
+	socket.operator = query.operator
 
-
-	return next()
+	next()
 }
 
 

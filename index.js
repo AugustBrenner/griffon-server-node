@@ -129,13 +129,19 @@ Public.serveWorkflow = async args => {
 	
 	const sockets = io(server)
 
-	sockets.use(Users.authenticateSocketConnection({secure: args.secure}))
+	sockets.use(Users.authenticateSocketConnection)
 
 	sockets.use(Operators.attach(sockets))
 
 	.on('connection', async socket => {
 
 		console.log('connected')
+		
+		if(socket.operator === '$$dashboard'){
+			Operators.index().then(operators => {
+				socket.emit('operators', operators)
+			})
+		}
 
 		socket.on('production', async data => {
 

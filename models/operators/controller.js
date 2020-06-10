@@ -168,6 +168,11 @@ Public.detachAll = async socket => {
 	await Operators.deleteMany({})
 }
 
+Public.index = async socket => {
+
+	return await Operators.find()
+}
+
 
 
 /************************************************************************
