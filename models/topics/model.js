@@ -16,6 +16,16 @@ const TopicSchema = new mongoose.Schema({
 		default: Date.now,
 	},
 	data: mongoose.Schema.Types.Mixed,
+	history:[{
+		state: String,
+		timestamp: Date,
+		socket_id: String,
+	}],
+	history_last:{
+		state: String,
+		timestamp: Date,
+		socket_id: String,
+	},
 })
 
 

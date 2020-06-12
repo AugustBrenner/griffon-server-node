@@ -156,6 +156,16 @@ Public.attach = io => async (socket, next) => {
 
 }
 
+Public.free = async socket => {
+
+	console.log(socket.id)
+
+	await Operators.findOneAndUpdate({socket_id: socket.id}, {
+		engaged: false,
+		free_at: Date.now(),
+	})
+}
+
 
 Public.detach = async socket => {
 

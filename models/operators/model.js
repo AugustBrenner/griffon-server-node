@@ -18,7 +18,15 @@ const OperatorSchema = new mongoose.Schema({
 	connected_at:{
 		type: Date,
 		default: Date.now,
-	}
+	},
+	engaged: {
+		type: Boolean,
+		default: false,
+	},
+	freed_at: {
+		type: Date,
+		default: Date.now,
+	},
 })
 
 

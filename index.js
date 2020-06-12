@@ -52,7 +52,10 @@ const Topics 		= require('./models/topics/controller')
 
 const disconnectAllClients = async () => {
 
-	await Operators.detachAll()
+	await Promise.all([
+		Operators.detachAll(),
+		Topics.failAll(),
+	])
 
 	mongoose.connection.close(function () { 
 		console.log('Mongoose default connection disconnected through app termination')
@@ -145,17 +148,32 @@ Public.serveWorkflow = async args => {
 
 		socket.on('production', async data => {
 
+
+			await Promise.all([
+				Operators.free(socket),
+				Topics.complete(socket),
+			])
+
 			await Topics.dissemintate(data, socket, sockets)
 		})
 
 		socket.on('disconnect', async reason => {
 
-			await Operators.detach(socket)
+			await Promise.all([
+				Operators.detach(socket),
+				Topics.fail(socket),
+			])
 			
 			console.log('disconnected', reason)
 		})
 
-		socket.on('error', error => {
+		socket.on('error', async error => {
+
+			await Promise.all([
+				Operators.detach(socket),
+				Topics.fail(socket),
+			])
+
 			console.log('error', error)
 		})
 
