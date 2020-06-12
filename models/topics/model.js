@@ -10,22 +10,9 @@ const TopicSchema = new mongoose.Schema({
 	},
 	channel: String,
 	producer: String,
+	producer_socket_id: String,
 	producer_environment: String,
-	timestamp: {
-		type: Date,
-		default: Date.now,
-	},
 	data: mongoose.Schema.Types.Mixed,
-	history:[{
-		state: String,
-		timestamp: Date,
-		socket_id: String,
-	}],
-	history_last:{
-		state: String,
-		timestamp: Date,
-		socket_id: String,
-	},
 })
 
 

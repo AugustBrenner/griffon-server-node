@@ -122,6 +122,26 @@ Public.serveDashboard = async args => {
 }
 
 
+const emitState = async io => {
+
+	console.log('EMITTING STATE')
+
+	await Promise.all([
+		Operators.getDashboards(),
+		Operators.index(),
+		Topics.index(/*{state: ['waiting', 'running', 'failed', 'completed']}*/),
+	])
+	.then(results => {
+		results[0].forEach(dashboard => {
+			io.to(dashboard.socket_id).emit('state', {
+				operators: results[1],
+				tasks: results[2],
+			})
+		})
+	})
+}
+
+
 Public.serveWorkflow = async args => {
 
 	const app = express()
@@ -140,11 +160,7 @@ Public.serveWorkflow = async args => {
 
 		console.log('connected')
 		
-		if(socket.operator === '$$dashboard'){
-			Operators.index().then(operators => {
-				socket.emit('operators', operators)
-			})
-		}
+		emitState(sockets)
 
 		socket.on('production', async data => {
 
@@ -155,6 +171,8 @@ Public.serveWorkflow = async args => {
 			])
 
 			await Topics.dissemintate(data, socket, sockets)
+
+			emitState(sockets)
 		})
 
 		socket.on('disconnect', async reason => {
@@ -163,6 +181,8 @@ Public.serveWorkflow = async args => {
 				Operators.detach(socket),
 				Topics.fail(socket),
 			])
+
+			await emitState(sockets)
 			
 			console.log('disconnected', reason)
 		})
@@ -173,6 +193,8 @@ Public.serveWorkflow = async args => {
 				Operators.detach(socket),
 				Topics.fail(socket),
 			])
+
+			await emitState(sockets)
 
 			console.log('error', error)
 		})

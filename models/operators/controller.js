@@ -156,9 +156,13 @@ Public.attach = io => async (socket, next) => {
 
 }
 
-Public.free = async socket => {
 
-	console.log(socket.id)
+Public.getDashboards = async () => {
+
+	return await Operators.find({name: '$$dashboard'})
+}
+
+Public.free = async socket => {
 
 	await Operators.findOneAndUpdate({socket_id: socket.id}, {
 		engaged: false,
