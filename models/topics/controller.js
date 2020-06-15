@@ -124,7 +124,7 @@ const emitTopic = async (consumer, io) => {
 		consumer.task.save(),
 	])
 
-	// console.log('DFDDDFDFDFDF')
+	console.log('DFDDDFDFDFDF', consumer.payload, consumer.socket_id)
 
 	io.to(consumer.socket_id).emit('consumption', consumer.payload)
 }
@@ -262,9 +262,13 @@ Public.index = async params => {
 
 Public.restart = async (data, io) => {
 
+	console.log(data)
+
 	const task = await Tasks.findById(data.task_id)
 
 	const consumer = await Operators.findOne({name: task.consumer, engaged: false})
+
+	console.log('SOCKET_ID', consumer.socket_id, task)
 
 	const payload = {
 		operator: consumer,
@@ -283,9 +287,16 @@ Public.restart = async (data, io) => {
 		socket_id: consumer.socket_id,
 	}
 
+	consumer.engaged = true
 	task.history.push(history_start)
 	task.history_last = history_start
-	await task.save()
+
+	await Promise.all([
+		consumer.save(),
+		task.save(),
+	])
+
+	console.log(payload.payload)
 
 	io.to(consumer.socket_id).emit('consumption', payload.payload)
 }

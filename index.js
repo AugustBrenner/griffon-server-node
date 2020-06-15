@@ -158,6 +158,8 @@ Public.serveWorkflow = async args => {
 
 	.on('connection', async socket => {
 
+		console.log(socket.id, socket.handshake.query.init)
+
 		console.log('connected')
 		
 		emitState(sockets)
