@@ -1,6 +1,6 @@
 {
   "name": "griffon",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "homepage": "https://github.com/AugustBrenner/griffon-server-node",
   "issues": "https://github.com/AugustBrenner/griffon-server-node/issues",
   "description": "A message queue based workflow system",

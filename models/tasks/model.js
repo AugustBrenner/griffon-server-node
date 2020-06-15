@@ -3,15 +3,15 @@ const nanoid 	= require('nanoid')
 
 
 const TaskSchema = new mongoose.Schema({
-	topic: String,
+	topics: [String],
 	stream_id: {
 		type: String,
 		default: nanoid.nanoid,
 	},
 	channel: String,
-	producer: String,
-	producer_socket_id: String,
-	producer_environment: String,
+	producers: [String],
+	producer_socket_ids: [String],
+	producer_environments: [String],
 	consumer: String,
 	consumer_socket_id: String,
 	consumer_environment: String,

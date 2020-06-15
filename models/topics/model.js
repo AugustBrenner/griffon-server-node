@@ -13,6 +13,10 @@ const TopicSchema = new mongoose.Schema({
 	producer_socket_id: String,
 	producer_environment: String,
 	data: mongoose.Schema.Types.Mixed,
+	timestamp: {
+		type: Date,
+		default: Date.now,
+	}
 })
 
 

@@ -199,6 +199,14 @@ Public.serveWorkflow = async args => {
 			console.log('error', error)
 		})
 
+
+		socket.on('restart', async data => {
+
+			await Topics.restart(data, sockets)
+
+			emitState(sockets)
+		})
+
 		// socket.emit('server', { hello: 'world' })
 
 		// socket.on('client', (data) => {

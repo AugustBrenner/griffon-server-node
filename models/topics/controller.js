@@ -33,6 +33,7 @@ const collectDependantTopics = topic => async consumer => {
 	const payload = {
 		operator: consumer,
 		socket_id: consumer.socket_id,
+		topics: [topic],
 		payload: {
 			channel: topic.channel,
 			stream_id: topic.stream_id,
@@ -42,38 +43,60 @@ const collectDependantTopics = topic => async consumer => {
 	}
 	payload.payload.data[topic.topic] = topic.data
 
-	payload.topics = [topic]
+	if(consumer.consumer_query.and){
 
-	if(!consumer.consumer_query.and) return payload
+		const dependent_topics = await Promise.all(consumer.consumer_query.and.map(dependent_topic => {
+			// console.log('TOPIC', dependent_topic)
+			return Topics.findOne({
+				topic: dependent_topic,
+				stream_id: topic.stream_id,
+				channel_id: topic.channel_id,
+			})
+			.sort({'timestamp': -1})
+		}))
 
+		const is_complete = dependent_topics.reduce((complete, topic) => {
 
-	const dependent_topics = await Promise.all(consumer.consumer_query.and.map(dependent_topic => {
-		// console.log('TOPIC', dependent_topic)
-		return Topics.findOne({
-			topic: dependent_topic,
-			stream_id: topic.stream_id,
-			channel_id: topic.channel_id,
-			'history_last.state': 'waiting',
+			return (complete ? !!topic : false)
+
+		}, true)
+
+		if(!is_complete) return false
+
+		payload.topics = dependent_topics
+
+		payload.payload.topics = dependent_topics.map(topic => topic.topic)
+
+		dependent_topics.forEach(topic => {
+			payload.payload.data[topic.topic] = topic.data
 		})
-		.sort({'history_last.timestamp': 1})
-	}))
+	}
 
-	const is_complete = dependent_topics.reduce((complete, topic) => {
 
-		return (complete ? !!topic : false)
+	const history_entry = {
+		state: 'waiting',
+		timestamp: Date.now(),
+		socket_id: consumer.socket_id,
+	}
 
-	}, true)
-
-	if(!is_complete) return false
-
-	dependent_topics.forEach(topic => {
-		payload.payload.data[topic.topic] = topic.data
+	const task = new Tasks({
+		topics: payload.payload.topics,
+		stream_id: payload.payload.stream_id,
+		channel: payload.payload.channel,
+		producers: payload.topics.map(topic => topic.producer),
+		producer_socket_id: payload.topics.map(topic => topic.producer_socket_id),
+		producer_environment: payload.topics.map(topic => topic.producer_environment),
+		data: payload.payload.data,
+		consumer: consumer.name,
+		consumer_socket_id: consumer.socket_id,
+		consumer_environment: consumer.environment,
+		history: [history_entry],
+		history_last: history_entry,
 	})
 
-	// console.log('DEPENDENT TOPICS', dependent_topics)
+	await task.save()
 
-	payload.payload.topics = dependent_topics.map(topic => topic.topic)
-	payload.topics = dependent_topics
+	payload.task = task
 
 	return payload
 }
@@ -93,14 +116,12 @@ const emitTopic = async (consumer, io) => {
 		socket_id: consumer.socket_id,
 	}
 	consumer.operator.engaged = true
-	consumer.tasks.forEach(topic => {
-		topic.history.push(history_entry)
-		topic.history_last = history_entry
-	})
+	consumer.task.history.push(history_entry)
+	consumer.task.history_last = history_entry
 
 	await Promise.all([
 		consumer.operator.save(),
-		Promise.all(consumer.tasks.map(topic => topic.save())),
+		consumer.task.save(),
 	])
 
 	// console.log('DFDDDFDFDFDF')
@@ -158,36 +179,6 @@ Public.dissemintate = async (payload, socket, io) => {
 	if(consumers.length === 0) return
 
 	await Promise.all(consumers.map(async consumer => {
-
-		consumer.tasks = await Promise.all(consumer.topics.map(async topic => {
-
-			const history_entry = {
-				state: 'waiting',
-				timestamp: Date.now(),
-				socket_id: socket.id,
-			}
-
-			const task = new Tasks({
-				topic_id: topic._id,
-				topic: topic.topic,
-				stream_id: topic.stream_id,
-				channel: topic.channel,
-				producer: topic.producer,
-				producer_socket_id: topic.producer_socket_id,
-				producer_environment: topic.producer_environment,
-				data: topic.data,
-				consumer: consumer.operator.name,
-				consumer_socket_id: consumer.socket_id,
-				consumer_environment: consumer.operator.environment,
-				data: payload.data,
-				history: [history_entry],
-				history_last: history_entry,
-			})
-			
-			return await task.save()
-		}))
-
-
 
 		await emitTopic(consumer, io)
 	}))
@@ -265,6 +256,38 @@ Public.index = async params => {
 	}
 
 	return await Tasks.find(query)
+}
+
+
+
+Public.restart = async (data, io) => {
+
+	const task = await Tasks.findById(data.task_id)
+
+	const consumer = await Operators.findOne({name: task.consumer, engaged: false})
+
+	const payload = {
+		operator: consumer,
+		socket_id: consumer.socket_id,
+		payload: {
+			channel: task.channel,
+			stream_id: task.stream_id,
+			topics: task.topics,
+			data: task.data,
+		},
+	}
+
+	const history_start = {
+		state: 'running',
+		timestamp: Date.now(),
+		socket_id: consumer.socket_id,
+	}
+
+	task.history.push(history_start)
+	task.history_last = history_start
+	await task.save()
+
+	io.to(consumer.socket_id).emit('consumption', payload.payload)
 }
 
 
