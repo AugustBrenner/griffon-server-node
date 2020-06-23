@@ -28,25 +28,90 @@ const Operators = require('../operators/model')
  ***********************************************************************/
 
 
+// const collectDependantTopics = topic => async consumer => {
+
+// 	const payload = {
+// 		operator: consumer,
+// 		socket_id: consumer.socket_id,
+// 		topics: [topic],
+// 		payload: {
+// 			channel: topic.channel,
+// 			stream_id: topic.stream_id,
+// 			topics: [topic.topic],
+// 			data: {},
+// 		},
+// 	}
+// 	payload.payload.data[topic.topic] = topic.data
+
+// 	if(consumer.consumer_query.and){
+
+// 		const dependent_topics = await Promise.all(consumer.consumer_query.and.map(dependent_topic => {
+// 			// console.log('TOPIC', dependent_topic)
+// 			return Topics.findOne({
+// 				topic: dependent_topic,
+// 				stream_id: topic.stream_id,
+// 				channel_id: topic.channel_id,
+// 			})
+// 			.sort({'timestamp': -1})
+// 		}))
+
+// 		const is_complete = dependent_topics.reduce((complete, topic) => {
+
+// 			return (complete ? !!topic : false)
+
+// 		}, true)
+
+// 		if(!is_complete) return false
+
+// 		payload.topics = dependent_topics
+
+// 		payload.payload.topics = dependent_topics.map(topic => topic.topic)
+
+// 		dependent_topics.forEach(topic => {
+// 			payload.payload.data[topic.topic] = topic.data
+// 		})
+// 	}
+
+
+// 	const history_entry = {
+// 		state: 'waiting',
+// 		timestamp: Date.now(),
+// 		socket_id: consumer.socket_id,
+// 	}
+
+// 	const task = new Tasks({
+// 		topics: payload.payload.topics,
+// 		stream_id: payload.payload.stream_id,
+// 		channel: payload.payload.channel,
+// 		producers: payload.topics.map(topic => topic.producer),
+// 		producer_socket_id: payload.topics.map(topic => topic.producer_socket_id),
+// 		producer_environment: payload.topics.map(topic => topic.producer_environment),
+// 		data: payload.payload.data,
+// 		consumer: consumer.name,
+// 		consumer_socket_id: consumer.socket_id,
+// 		consumer_environment: consumer.environment,
+// 		history: [history_entry],
+// 		history_last: history_entry,
+// 	})
+
+// 	await task.save()
+
+// 	payload.task = task
+
+// 	return payload
+// }
+
+
 const collectDependantTopics = topic => async consumer => {
 
-	const payload = {
-		operator: consumer,
-		socket_id: consumer.socket_id,
+	const pair = {
 		topics: [topic],
-		payload: {
-			channel: topic.channel,
-			stream_id: topic.stream_id,
-			topics: [topic.topic],
-			data:{},
-		},
+		consumer: consumer,
 	}
-	payload.payload.data[topic.topic] = topic.data
 
 	if(consumer.consumer_query.and){
 
 		const dependent_topics = await Promise.all(consumer.consumer_query.and.map(dependent_topic => {
-			// console.log('TOPIC', dependent_topic)
 			return Topics.findOne({
 				topic: dependent_topic,
 				stream_id: topic.stream_id,
@@ -63,42 +128,10 @@ const collectDependantTopics = topic => async consumer => {
 
 		if(!is_complete) return false
 
-		payload.topics = dependent_topics
-
-		payload.payload.topics = dependent_topics.map(topic => topic.topic)
-
-		dependent_topics.forEach(topic => {
-			payload.payload.data[topic.topic] = topic.data
-		})
+		pair.topics = dependent_topics
 	}
 
-
-	const history_entry = {
-		state: 'waiting',
-		timestamp: Date.now(),
-		socket_id: consumer.socket_id,
-	}
-
-	const task = new Tasks({
-		topics: payload.payload.topics,
-		stream_id: payload.payload.stream_id,
-		channel: payload.payload.channel,
-		producers: payload.topics.map(topic => topic.producer),
-		producer_socket_id: payload.topics.map(topic => topic.producer_socket_id),
-		producer_environment: payload.topics.map(topic => topic.producer_environment),
-		data: payload.payload.data,
-		consumer: consumer.name,
-		consumer_socket_id: consumer.socket_id,
-		consumer_environment: consumer.environment,
-		history: [history_entry],
-		history_last: history_entry,
-	})
-
-	await task.save()
-
-	payload.task = task
-
-	return payload
+	return pair
 }
 
 
@@ -106,28 +139,50 @@ const collectDependantTopics = topic => async consumer => {
 
 
 
-const emitTopic = async (consumer, io) => {
+// const emitTask = async (consumer, topics, io) => {
 
-	// console.log('HEEEELLLO', consumer)
+// 	// console.log('HEEEELLLO', consumer)
 
-	const history_entry = {
-		state: 'running',
-		timestamp: Date.now(),
-		socket_id: consumer.socket_id,
-	}
-	consumer.operator.engaged = true
-	consumer.task.history.push(history_entry)
-	consumer.task.history_last = history_entry
+// 	const history_entry = {
+// 		state: 'running',
+// 		timestamp: Date.now(),
+// 		socket_id: consumer.socket_id,
+// 	}
 
-	await Promise.all([
-		consumer.operator.save(),
-		consumer.task.save(),
-	])
+// 	const task = new Tasks({
+// 		topics: topics.map(topic => topic.topic),
+// 		stream_id: topics[0].stream_id,
+// 		channel: topics[0].channel,
+// 		producers: topics.map(topic => topic.producer),
+// 		producer_socket_id: topics.map(topic => topic.producer_socket_id),
+// 		producer_environment: topics.map(topic => topic.producer_environment),
+// 		data: {},
+// 		consumer: consumer.name,
+// 		consumer_socket_id: consumer.socket_id,
+// 		consumer_environment: consumer.environment,
+// 		history: [history_entry],
+// 		history_last: history_entry,
+// 	})
 
-	console.log('DFDDDFDFDFDF', consumer.payload, consumer.socket_id)
+// 	topics.forEach(topic => {
+// 		task.data[topic.topic] = topic.data
+// 	})
 
-	io.to(consumer.socket_id).emit('consumption', consumer.payload)
-}
+// 	consumer.engaged = true
+
+
+// 	await Promise.all([
+// 		consumer.save(),
+// 		task.save(),
+// 	])
+
+// 	io.to(consumer.socket_id).emit('consumption', {
+// 		channel: task.channel,
+// 		stream_id: task.stream_id,
+// 		topics: task.topics,
+// 		data: task.data,
+// 	})
+// }
 
 /************************************************************************
  * Public Functions
@@ -138,18 +193,23 @@ const Public = {}
 
 Public.dissemintate = async (payload, socket, io) => {
 
+	// Free client
+	await Operators.findOneAndUpdate({socket_id: socket.id}, {engaged: false, lock_id: '', freed_at: Date.now()})
+
+
+	// Parse client from handshake
 	const client = JSON.parse(socket.handshake.query.init)
 
+
+	// Validate production
 	if(client.produce.indexOf(payload.topic) === -1) return socket.emit(new Error('Client not registered to produce this topic.'))
 
 	if(!payload.channel) return socket.emit(new Error('Producers must include a channel to emit to.'))
 
 	if(!payload.data) return socket.emit(new Error('Producer messages must not be empty.'))
 
-	// console.log('TOPIC', payload, client)
 
-	// console.log('TOPIC', client)
-
+	// Generate a new topic for the produuction
 	const topic = new Topics({
 		topic: payload.topic,
 		stream_id: payload.stream_id || nanoid.nanoid(),
@@ -162,33 +222,140 @@ Public.dissemintate = async (payload, socket, io) => {
 
 	await topic.save()
 
-	const operators = await Operators.find({consumer_topics: topic.topic, engaged: false})
 
-	let consumers = await Promise.all(operators.map(collectDependantTopics(topic)))
 
-	consumers = consumers.filter(x => x).sort((a, b) => (a.freed_at - b.freed_at))
-	
-	const unique_consumers = {}
+	// Get all curious consumers
+	const curious_consumers = await Operators.find({consumer_topics: topic.topic})
 
-	consumers.forEach(consumer => {
-		unique_consumers[consumer.operator.name+consumer.operator.environment] = consumer
+
+
+	// Filter for unique curious consumers
+	const unique_curious_consumers = {}
+
+	curious_consumers.forEach(consumer => {
+		unique_curious_consumers[consumer.name+consumer.environment] = consumer
 	})
 
-	consumers = Object.values(unique_consumers)
 
-	if(consumers.length === 0) return
 
-	await Promise.all(consumers.map(async consumer => {
+	// Collect dependant topics from unique curous consumers
+	let topic_consumer_pairs = await Promise.all(Object.values(unique_curious_consumers).map(collectDependantTopics(topic)))
 
-		await emitTopic(consumer, io)
+
+
+	// Generate Tasks
+	await Promise.all(topic_consumer_pairs.map(pair => {
+
+		const topics = pair.topics
+
+		const history_entry = {
+			state: 'waiting',
+			timestamp: Date.now(),
+			socket_id: socket.id,
+		}
+
+		const task = new Tasks({
+			topics: topics.map(topic => topic.topic),
+			stream_id: topics[0].stream_id,
+			channel: topics[0].channel,
+			producers: topics.map(topic => topic.producer),
+			producer_socket_ids: topics.map(topic => topic.producer_socket_id),
+			producer_environments: topics.map(topic => topic.producer_environment),
+			consumer: pair.consumer.name,
+			consumer_environment: pair.consumer.environment,
+			data: {},
+			history: [history_entry],
+			history_last: history_entry,
+		})
+
+		topics.forEach(topic => {
+			task.data[topic.topic] = topic.data
+		})
+
+		return task.save()
 	}))
 
 
-	// console.log(payload, '\n\n\n', socket.id, JSON.parse(socket.handshake.query.init), topic)
+
+	// Generate a lock_id to lock curious consumers
+	const lock_id = nanoid.nanoid()
 
 
 
+	// Lock all waiting tasks and fetch them
+	await Tasks.updateMany({'history_last.state': 'waiting', locked: false}, {locked: true, lock_id: lock_id})
+
+	const tasks = await Tasks.find({lock_id: lock_id})
+
+
+
+
+	// Fetch LRU consumers for each task
+	let pairs = await Promise.all(tasks.map(async task => {
+
+		const consumer = await Operators.findOneAndUpdate({
+			name: task.consumer,
+			environment: task.consumer_environment,
+			engaged: false,
+		}, {
+			engaged: true,
+		}, {
+			new: true,
+		})
+		.sort({freed_at: 1})
+
+
+		return {
+			task: task,
+			consumer: consumer,
+		}
+	}))
+
+
+
+
+	// Release orphaned tasks
+	await Tasks.updateMany({_id: {$in: pairs.filter(x => !x.consumer).map(x => x.task._id)}}, {locked: false, lock_id: ''})
+
+
+
+	// Emit tasks to consumers
+	await Promise.all(pairs.filter(x => x.consumer).map(async pair => {
+
+
+		const history_entry = {
+			state: 'running',
+			timestamp: Date.now(),
+			socket_id: pair.consumer.socket_id,
+		}
+
+		pair.task.consumer_socket_id = pair.consumer.socket_id
+		pair.task.history.push(history_entry)
+		pair.task.history_last = history_entry
+		pair.task.locked = false
+		pair.task.lock_id = ''
+
+		await pair.task.save()
+
+		io.to(pair.consumer.socket_id).emit('consumption', {
+			channel: pair.task.channel,
+			stream_id: pair.task.stream_id,
+			topics: pair.task.topics,
+			data: pair.task.data,
+		})
+	}))
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 Public.complete = async socket => {

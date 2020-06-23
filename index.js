@@ -168,7 +168,7 @@ Public.serveWorkflow = async args => {
 
 
 			await Promise.all([
-				Operators.free(socket),
+				// Operators.free(socket),
 				Topics.complete(socket),
 			])
 

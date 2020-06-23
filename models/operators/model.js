@@ -27,6 +27,10 @@ const OperatorSchema = new mongoose.Schema({
 		type: Date,
 		default: Date.now,
 	},
+	lock_id:{
+		type: String,
+		default: '',
+	},
 })
 
 

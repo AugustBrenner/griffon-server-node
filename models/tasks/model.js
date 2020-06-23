@@ -30,6 +30,14 @@ const TaskSchema = new mongoose.Schema({
 		timestamp: Date,
 		socket_id: String,
 	},
+	locked:{
+		type: Boolean,
+		default: false,
+	},
+	lock_id:{
+		type: String,
+		default: '',
+	},
 })
 
 
