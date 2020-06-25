@@ -105,7 +105,7 @@ Public.serveDashboard = async args => {
 	const sockets = io(server, {
 		pingInterval: 5000,
   		pingTimeout: 5000,
-  		transports	['websocket'],
+  		transports: ['websocket'],
 	})
 
 	await server.listen(args.port)
