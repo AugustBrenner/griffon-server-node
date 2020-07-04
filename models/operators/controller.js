@@ -83,6 +83,16 @@ const Public = {}
 
 Public.attach = io => async (socket, next) => {
 
+	await new Promise((resolve, reject) => {
+
+		io.clients((error, clients) => {
+			resolve(Operators.deleteMany({socket_id: {$nin: clients}}))
+		})
+
+	})
+
+
+
 	const query = JSON.parse(socket.handshake.query.init)
 
 	const operator = new Operators({
