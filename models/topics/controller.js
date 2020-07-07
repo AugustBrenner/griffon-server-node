@@ -102,7 +102,7 @@ const Operators = require('../operators/model')
 // }
 
 
-const collectDependantTopics = topi.filter(x=>x)c => async consumer => {
+const collectDependantTopics = topic => async consumer => {
 
 	const pair = {
 		topics: [topic],
