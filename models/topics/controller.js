@@ -102,7 +102,7 @@ const Operators = require('../operators/model')
 // }
 
 
-const collectDependantTopics = topic => async consumer => {
+const collectDependantTopics = topi.filter(x=>x)c => async consumer => {
 
 	const pair = {
 		topics: [topic],
@@ -239,7 +239,7 @@ Public.dissemintate = async (payload, socket, io) => {
 
 
 	// Collect dependant topics from unique curous consumers
-	let topic_consumer_pairs = await Promise.all(Object.values(unique_curious_consumers).map(collectDependantTopics(topic)))
+	let topic_consumer_pairs = await Promise.all(Object.values(unique_curious_consumers).map(collectDependantTopics(topic).filter(x=>x)))
 
 
 
@@ -357,6 +357,8 @@ Public.dissemintate = async (payload, socket, io) => {
 		await emitTask(pair)
 		.then(async response => {
 
+			console.log(response)
+
 			const history_entry = {
 				state: 'running',
 				timestamp: Date.now(),
@@ -373,6 +375,8 @@ Public.dissemintate = async (payload, socket, io) => {
 
 		})
 		.catch(async error => {
+
+			console.log(error)
 
 			pair.task.locked = false
 			pair.task.lock_id = ''
