@@ -197,6 +197,7 @@ Public.dissemintate = async (payload, socket, io) => {
 	await Operators.findOneAndUpdate({socket_id: socket.id}, {engaged: false, lock_id: '', freed_at: Date.now()})
 
 	// Mark parent task completed
+	console.log('COMPLETED TASK ID:', payload.completed_task_id)
 	if(payload.completed_task_id){
 		const history_entry = {
 			state: 'completed',
@@ -253,12 +254,12 @@ Public.dissemintate = async (payload, socket, io) => {
 
 
 	// Collect dependant topics from unique curous consumers
-	let topic_consumer_pairs = await Promise.all(Object.values(unique_curious_consumers).map(collectDependantTopics(topic)).filter(x=>x))
+	let topic_consumer_pairs = await Promise.all(Object.values(unique_curious_consumers).map(collectDependantTopics(topic)))
 
 
 
 	// Generate Tasks
-	await Promise.all(topic_consumer_pairs.map(pair => {
+	await Promise.all(topic_consumer_pairs.filter(x=>x).map(pair => {
 
 		const topics = pair.topics
 
