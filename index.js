@@ -102,11 +102,7 @@ Public.serveDashboard = async args => {
 
 	const server = http.Server(dashboard)
 
-	const sockets = io(server, {
-		pingInterval: 5000,
-  		pingTimeout: 5000,
-  		transports: ['websocket'],
-	})
+	const sockets = io(server)
 
 	await server.listen(args.port)
 

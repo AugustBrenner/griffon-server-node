@@ -287,6 +287,7 @@ Public.dissemintate = async (payload, socket, io) => {
 
 	const tasks = await Tasks.find({lock_id: lock_id})
 
+	// console.log('\n\ntasks:\n', tasks.map(x => x.topics.join(',')))
 
 
 
@@ -304,6 +305,7 @@ Public.dissemintate = async (payload, socket, io) => {
 		})
 		.sort({freed_at: 1})
 
+		// console.log(consumer)
 
 		return {
 			task: task,
@@ -312,6 +314,9 @@ Public.dissemintate = async (payload, socket, io) => {
 	}))
 
 
+	// console.log('\n\nConsumer-Task Pairs:\n', pairs.filter(x => x.consumer))
+
+	console.log(socket.id)
 
 
 	// Release orphaned tasks
@@ -322,27 +327,60 @@ Public.dissemintate = async (payload, socket, io) => {
 	// Emit tasks to consumers
 	await Promise.all(pairs.filter(x => x.consumer).map(async pair => {
 
+		// console.log('HEEEELLLO', consumer)
 
-		const history_entry = {
-			state: 'running',
-			timestamp: Date.now(),
-			socket_id: pair.consumer.socket_id,
-		}
+		const emitTask = pair => new Promise((resolve, reject) => {
 
-		pair.task.consumer_socket_id = pair.consumer.socket_id
-		pair.task.history.push(history_entry)
-		pair.task.history_last = history_entry
-		pair.task.locked = false
-		pair.task.lock_id = ''
+			let timed_out = false
+			let resolved = false
 
-		await pair.task.save()
+			setTimeout(() => {
+				timed_out = true
+				reject({error: 'timeout'})
+			}, 10000)
 
-		io.to(pair.consumer.socket_id).emit('consumption', {
-			channel: pair.task.channel,
-			stream_id: pair.task.stream_id,
-			topics: pair.task.topics,
-			data: pair.task.data,
+			io.sockets.connected[pair.consumer.socket_id].emit('consumption', {
+				channel: pair.task.channel,
+				stream_id: pair.task.stream_id,
+				topics: pair.task.topics,
+				data: pair.task.data,
+			}, response => {
+
+				if(timed_out) return
+
+				resolved = true
+
+				resolve(response)
+			})
 		})
+
+		await emitTask(pair)
+		.then(async response => {
+
+			const history_entry = {
+				state: 'running',
+				timestamp: Date.now(),
+				socket_id: pair.consumer.socket_id,
+			}
+
+			pair.task.consumer_socket_id = pair.consumer.socket_id
+			pair.task.history.push(history_entry)
+			pair.task.history_last = history_entry
+			pair.task.locked = false
+			pair.task.lock_id = ''
+
+			await pair.task.save()
+
+		})
+		.catch(async error => {
+
+			pair.task.locked = false
+			pair.task.lock_id = ''
+
+			await pair.task.save()
+
+		})
+
 	}))
 }
 
