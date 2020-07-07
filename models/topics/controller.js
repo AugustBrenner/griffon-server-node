@@ -239,7 +239,7 @@ Public.dissemintate = async (payload, socket, io) => {
 
 
 	// Collect dependant topics from unique curous consumers
-	let topic_consumer_pairs = await Promise.all(Object.values(unique_curious_consumers).map(collectDependantTopics(topic).filter(x=>x)))
+	let topic_consumer_pairs = await Promise.all(Object.values(unique_curious_consumers).map(collectDependantTopics(topic)).filter(x=>x))
 
 
 
