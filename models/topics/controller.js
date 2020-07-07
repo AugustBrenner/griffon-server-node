@@ -196,6 +196,20 @@ Public.dissemintate = async (payload, socket, io) => {
 	// Free client
 	await Operators.findOneAndUpdate({socket_id: socket.id}, {engaged: false, lock_id: '', freed_at: Date.now()})
 
+	// Mark parent task completed
+	if(payload.completed_task_id){
+		const history_entry = {
+			state: 'completed',
+			timestamp: Date.now(),
+			socket_id: socket.id,
+		}
+
+		await Tasks.findByIdAndUpdate(payload.completed_task_id, {
+			$push: {history: history_entry},
+			history_last: history_entry,
+		})
+	}
+
 
 	// Parse client from handshake
 	const client = JSON.parse(socket.handshake.query.init)
@@ -340,6 +354,7 @@ Public.dissemintate = async (payload, socket, io) => {
 			}, 10000)
 
 			io.sockets.connected[pair.consumer.socket_id].emit('consumption', {
+				task_id: pair.task._id,
 				channel: pair.task.channel,
 				stream_id: pair.task.stream_id,
 				topics: pair.task.topics,

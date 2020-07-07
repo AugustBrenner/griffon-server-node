@@ -167,10 +167,10 @@ Public.serveWorkflow = async args => {
 		socket.on('production', async data => {
 
 
-			await Promise.all([
-				// Operators.free(socket),
-				Topics.complete(socket),
-			])
+			// await Promise.all([
+			// 	Operators.free(socket),
+			// 	Topics.complete(socket),
+			// ])
 
 			await Topics.dissemintate(data, socket, sockets)
 
