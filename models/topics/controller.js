@@ -499,6 +499,7 @@ Public.restart = async (data, io) => {
 		operator: consumer,
 		socket_id: consumer.socket_id,
 		payload: {
+			task_id: pair.task._id,
 			channel: task.channel,
 			stream_id: task.stream_id,
 			topics: task.topics,
