@@ -524,7 +524,9 @@ Public.restart = async (data, io) => {
 
 	console.log(payload.payload)
 
-	io.to(consumer.socket_id).emit('consumption', payload.payload)
+	io.sockets.connected[consumer.socket_id].emit('consumption', payload.payload, response => {
+		console.log(`Task ${task._id} restarted successfully`, response)
+	})
 }
 
 
